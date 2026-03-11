@@ -1,0 +1,44 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "\nYour Name\n",
+    "section": "",
+    "text": "Your Name\n\n\nRMI 4226 · Risk and Insurance Data Analytics\n\n\nHi! I’m a student studying Risk Management and Insurance with a focus on data analytics. I’m passionate about using tools like R and Quarto to extract insights from complex datasets — particularly in the insurance and financial sectors.\nThis website showcases my coursework and projects from RMI 4226. Feel free to explore my homework tab to see my data analysis work.\n\n 🔗 Connect on LinkedIn"
+  },
+  {
+    "objectID": "homework3.html",
+    "href": "homework3.html",
+    "title": "Homework 3",
+    "section": "",
+    "text": "Objective: This assignment enhances skills in data manipulation — specifically reshaping data between long and wide formats — and in creating effective visualizations using ggplot2. The goal is to prepare data to answer specific questions and use appropriate graphs to communicate findings.\nDataset: We work with a dataset containing information about insurance company assets stored in naic_asset.rta. Variables include:\n\n\n\n\n\n\n\nVariable\nDescription\n\n\n\n\nCOCODE\nCompany code\n\n\nCOMPANY_NAME\nCompany name\n\n\nCOMPANY_TYPE_DESC\nType of insurance company\n\n\nCURRENT_YEAR\nAsset value\n\n\nYEAR\nReporting year\n\n\nLINE\nLine of business (Bonds, CashHandDeposit, Stocks_Com, Total)"
+  },
+  {
+    "objectID": "homework3.html#overview",
+    "href": "homework3.html#overview",
+    "title": "Homework 3",
+    "section": "",
+    "text": "Objective: This assignment enhances skills in data manipulation — specifically reshaping data between long and wide formats — and in creating effective visualizations using ggplot2. The goal is to prepare data to answer specific questions and use appropriate graphs to communicate findings.\nDataset: We work with a dataset containing information about insurance company assets stored in naic_asset.rta. Variables include:\n\n\n\n\n\n\n\nVariable\nDescription\n\n\n\n\nCOCODE\nCompany code\n\n\nCOMPANY_NAME\nCompany name\n\n\nCOMPANY_TYPE_DESC\nType of insurance company\n\n\nCURRENT_YEAR\nAsset value\n\n\nYEAR\nReporting year\n\n\nLINE\nLine of business (Bonds, CashHandDeposit, Stocks_Com, Total)"
+  },
+  {
+    "objectID": "homework3.html#part-1-data-preparation-and-reshaping",
+    "href": "homework3.html#part-1-data-preparation-and-reshaping",
+    "title": "Homework 3",
+    "section": "Part 1: Data Preparation and Reshaping",
+    "text": "Part 1: Data Preparation and Reshaping\n\nStep 1 — Load and Filter Data\nLoad the dataset, select the relevant columns, filter to the four lines of business, and store as longdata.\n\nrm(list = ls())\nlibrary(tidyverse)\nload(\"naic_asset.rta\")\n\nlongdata &lt;- MyData |&gt;\n  select(COCODE, COMPANY_NAME, COMPANY_TYPE_DESC, CURRENT_YEAR, YEAR, LINE) |&gt;\n  filter(LINE %in% c(\"Bonds\", \"CashHandDeposit\", \"Stocks_Com\", \"Total\"))\n\n\n\nStep 2 — Pivot to Wide Format\nTransform longdata from long to wide format using LINE values as column names, populated with CURRENT_YEAR values. Keep only rows with positive total assets.\n\nwidedata &lt;- longdata |&gt;\n  pivot_wider(\n    names_from  = LINE,\n    values_from = CURRENT_YEAR\n  ) |&gt;\n  filter(Total &gt; 0)\n\n\n\nStep 3 — Create Ratio Variables and Convert Data Types\nCalculate bondRatio and stockRatio, then convert YEAR and COMPANY_TYPE_DESC to factors.\n\nwidedata &lt;- widedata |&gt;\n  mutate(\n    bondRatio  = Bonds / Total,\n    stockRatio = Stocks_Com / Total,\n    YEAR               = as.factor(YEAR),\n    COMPANY_TYPE_DESC  = as.factor(COMPANY_TYPE_DESC)\n  )\n\n\n\nStep 4 — Pivot Back to Long Format\nReshape widedata back to long format, collapsing all value columns into name and value.\n\nlongdata &lt;- widedata |&gt;\n  pivot_longer(\n    cols = -c(COCODE, YEAR, COMPANY_NAME, COMPANY_TYPE_DESC)\n  )"
+  },
+  {
+    "objectID": "homework3.html#part-2-data-visualization",
+    "href": "homework3.html#part-2-data-visualization",
+    "title": "Homework 3",
+    "section": "Part 2: Data Visualization",
+    "text": "Part 2: Data Visualization\n\nStep 5 — Total Asset Trends Over Time\nA point chart showing the distribution of total assets across years.\n\nlongdata |&gt;\n  filter(name == \"Total\") |&gt;\n  ggplot(aes(x = YEAR, y = value)) +\n  geom_point() +\n  theme(axis.text.x = element_text(angle = 45, hjust = 1))\n\n\n\nStep 6 — Total Asset Trends by Company Type\nThe same chart enhanced with color to differentiate company types.\n\nlongdata |&gt;\n  filter(name == \"Total\") |&gt;\n  ggplot(aes(x = YEAR, y = value, color = COMPANY_TYPE_DESC)) +\n  geom_point() +\n  theme(\n    axis.text.x    = element_text(angle = 45, hjust = 1),\n    legend.position = \"bottom\"\n  )\n\n\n\nStep 7 — Total Asset Distribution Over Time (Box Plot)\nA box plot showing how total asset distributions vary by year.\n\nlongdata |&gt;\n  filter(name == \"Total\") |&gt;\n  ggplot(aes(x = YEAR, y = value)) +\n  geom_boxplot() +\n  theme(axis.text.x = element_text(angle = 45, hjust = 1))\n\n\n\nStep 8 — Zoomed-In Total Asset Distribution\nThe same box plot with y-axis limited to 0–10⁸ for a closer look at the bulk of the distribution.\n\nlongdata |&gt;\n  filter(name == \"Total\") |&gt;\n  ggplot(aes(x = YEAR, y = value)) +\n  geom_boxplot() +\n  ylim(0, 10^8) +\n  theme(axis.text.x = element_text(angle = 45, hjust = 1))\n\n\n\nStep 9 — Bond Ratio Distribution by Company Type\nBox plots of bondRatio per year, colored by company type, with y-axis fixed to [0, 1].\n\nlongdata |&gt;\n  filter(name == \"bondRatio\") |&gt;\n  ggplot(aes(x = YEAR, y = value, fill = COMPANY_TYPE_DESC)) +\n  geom_boxplot() +\n  ylim(0, 1) +\n  theme(\n    axis.text.x    = element_text(angle = 45, hjust = 1),\n    legend.position = \"bottom\"\n  )\n\n\n\nStep 10 — Bond vs. Stock Ratio: Faceted Comparison\nA faceted box plot comparing bondRatio and stockRatio across company types.\n\nlongdata |&gt;\n  filter(name %in% c(\"bondRatio\", \"stockRatio\")) |&gt;\n  ggplot(aes(x = YEAR, y = value, fill = COMPANY_TYPE_DESC)) +\n  geom_boxplot() +\n  ylim(0, 1) +\n  facet_grid(name ~ COMPANY_TYPE_DESC) +\n  theme(\n    axis.text.x    = element_text(angle = 45, hjust = 1),\n    legend.position = \"bottom\"\n  )\n\n\n\nStep 11 — Average Bond and Stock Ratios: Stacked Bar Chart\nGroup by year and company type, compute mean ratios, then visualize as a stacked bar chart faceted by company type.\n\nlongdata |&gt;\n  filter(name %in% c(\"bondRatio\", \"stockRatio\")) |&gt;\n  pivot_wider(names_from = name, values_from = value) |&gt;\n  group_by(YEAR, COMPANY_TYPE_DESC) |&gt;\n  summarise(\n    bondRatio  = mean(bondRatio,  na.rm = TRUE),\n    stockRatio = mean(stockRatio, na.rm = TRUE),\n    .groups = \"drop\"\n  ) |&gt;\n  pivot_longer(cols = c(bondRatio, stockRatio)) |&gt;\n  ggplot(aes(x = YEAR, y = value, fill = name)) +\n  geom_bar(stat = \"identity\") +\n  facet_wrap(~ COMPANY_TYPE_DESC) +\n  ylim(0, 1) +\n  labs(\n    title = \"Average Bond and Stock Ratios by Company Type Over Time\",\n    x     = \"Year\",\n    y     = \"Average Ratio\"\n  ) +\n  theme(\n    axis.text.x    = element_text(angle = 45, hjust = 1),\n    legend.position = \"bottom\"\n  )"
+  },
+  {
+    "objectID": "homework3.html#summary-and-findings",
+    "href": "homework3.html#summary-and-findings",
+    "title": "Homework 3",
+    "section": "Summary and Findings",
+    "text": "Summary and Findings\nWorking through these visualizations revealed several notable patterns in the insurance asset data:\n\nRight-skewed asset distributions — Total asset distributions across all years were heavily right-skewed, indicating that a small number of insurance companies hold a disproportionately large share of total industry assets.\nCompany type differences — When zooming in on the distribution (y-axis limit of 10⁸), it became clear that certain COMPANY_TYPE_DESC groups consistently hold larger total assets than others, suggesting structural differences across insurer categories.\nPortfolio composition trends — The bond and stock ratio plots reveal that different company types allocate their portfolios quite differently. Life insurers, for example, tend to hold higher bond ratios compared to property-casualty companies, which aligns with industry expectations around liability duration matching."
+  }
+]

@@ -1,0 +1,223 @@
+---
+title: "Homework 3"
+subtitle: "RMI 4226 · Risk and Insurance Data Analytics — Fall 2025"
+format:
+  html:
+    toc: true
+    toc-location: left
+    toc-title: "Contents"
+    embed-resources: true
+---
+
+## Overview
+
+**Objective:** This assignment enhances skills in data manipulation — specifically reshaping data between long and wide formats — and in creating effective visualizations using `ggplot2`. The goal is to prepare data to answer specific questions and use appropriate graphs to communicate findings.
+
+**Dataset:** We work with a dataset containing information about insurance company assets stored in `naic_asset.rta`. Variables include:
+
+| Variable | Description |
+|---|---|
+| `COCODE` | Company code |
+| `COMPANY_NAME` | Company name |
+| `COMPANY_TYPE_DESC` | Type of insurance company |
+| `CURRENT_YEAR` | Asset value |
+| `YEAR` | Reporting year |
+| `LINE` | Line of business (Bonds, CashHandDeposit, Stocks_Com, Total) |
+
+---
+
+## Part 1: Data Preparation and Reshaping
+
+### Step 1 — Load and Filter Data
+
+Load the dataset, select the relevant columns, filter to the four lines of business, and store as `longdata`.
+
+```{r}
+#| eval: false
+rm(list = ls())
+library(tidyverse)
+load("naic_asset.rta")
+
+longdata <- MyData |>
+  select(COCODE, COMPANY_NAME, COMPANY_TYPE_DESC, CURRENT_YEAR, YEAR, LINE) |>
+  filter(LINE %in% c("Bonds", "CashHandDeposit", "Stocks_Com", "Total"))
+```
+
+### Step 2 — Pivot to Wide Format
+
+Transform `longdata` from long to wide format using `LINE` values as column names, populated with `CURRENT_YEAR` values. Keep only rows with positive total assets.
+
+```{r}
+#| eval: false
+widedata <- longdata |>
+  pivot_wider(
+    names_from  = LINE,
+    values_from = CURRENT_YEAR
+  ) |>
+  filter(Total > 0)
+```
+
+### Step 3 — Create Ratio Variables and Convert Data Types
+
+Calculate `bondRatio` and `stockRatio`, then convert `YEAR` and `COMPANY_TYPE_DESC` to factors.
+
+```{r}
+#| eval: false
+widedata <- widedata |>
+  mutate(
+    bondRatio  = Bonds / Total,
+    stockRatio = Stocks_Com / Total,
+    YEAR               = as.factor(YEAR),
+    COMPANY_TYPE_DESC  = as.factor(COMPANY_TYPE_DESC)
+  )
+```
+
+### Step 4 — Pivot Back to Long Format
+
+Reshape `widedata` back to long format, collapsing all value columns into `name` and `value`.
+
+```{r}
+#| eval: false
+longdata <- widedata |>
+  pivot_longer(
+    cols = -c(COCODE, YEAR, COMPANY_NAME, COMPANY_TYPE_DESC)
+  )
+```
+
+---
+
+## Part 2: Data Visualization
+
+### Step 5 — Total Asset Trends Over Time
+
+A point chart showing the distribution of total assets across years.
+
+```{r}
+#| eval: false
+longdata |>
+  filter(name == "Total") |>
+  ggplot(aes(x = YEAR, y = value)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Step 6 — Total Asset Trends by Company Type
+
+The same chart enhanced with color to differentiate company types.
+
+```{r}
+#| eval: false
+longdata |>
+  filter(name == "Total") |>
+  ggplot(aes(x = YEAR, y = value, color = COMPANY_TYPE_DESC)) +
+  geom_point() +
+  theme(
+    axis.text.x    = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+```
+
+### Step 7 — Total Asset Distribution Over Time (Box Plot)
+
+A box plot showing how total asset distributions vary by year.
+
+```{r}
+#| eval: false
+longdata |>
+  filter(name == "Total") |>
+  ggplot(aes(x = YEAR, y = value)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Step 8 — Zoomed-In Total Asset Distribution
+
+The same box plot with y-axis limited to 0–10⁸ for a closer look at the bulk of the distribution.
+
+```{r}
+#| eval: false
+longdata |>
+  filter(name == "Total") |>
+  ggplot(aes(x = YEAR, y = value)) +
+  geom_boxplot() +
+  ylim(0, 10^8) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Step 9 — Bond Ratio Distribution by Company Type
+
+Box plots of `bondRatio` per year, colored by company type, with y-axis fixed to [0, 1].
+
+```{r}
+#| eval: false
+longdata |>
+  filter(name == "bondRatio") |>
+  ggplot(aes(x = YEAR, y = value, fill = COMPANY_TYPE_DESC)) +
+  geom_boxplot() +
+  ylim(0, 1) +
+  theme(
+    axis.text.x    = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+```
+
+### Step 10 — Bond vs. Stock Ratio: Faceted Comparison
+
+A faceted box plot comparing `bondRatio` and `stockRatio` across company types.
+
+```{r}
+#| eval: false
+longdata |>
+  filter(name %in% c("bondRatio", "stockRatio")) |>
+  ggplot(aes(x = YEAR, y = value, fill = COMPANY_TYPE_DESC)) +
+  geom_boxplot() +
+  ylim(0, 1) +
+  facet_grid(name ~ COMPANY_TYPE_DESC) +
+  theme(
+    axis.text.x    = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+```
+
+### Step 11 — Average Bond and Stock Ratios: Stacked Bar Chart
+
+Group by year and company type, compute mean ratios, then visualize as a stacked bar chart faceted by company type.
+
+```{r}
+#| eval: false
+longdata |>
+  filter(name %in% c("bondRatio", "stockRatio")) |>
+  pivot_wider(names_from = name, values_from = value) |>
+  group_by(YEAR, COMPANY_TYPE_DESC) |>
+  summarise(
+    bondRatio  = mean(bondRatio,  na.rm = TRUE),
+    stockRatio = mean(stockRatio, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  pivot_longer(cols = c(bondRatio, stockRatio)) |>
+  ggplot(aes(x = YEAR, y = value, fill = name)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ COMPANY_TYPE_DESC) +
+  ylim(0, 1) +
+  labs(
+    title = "Average Bond and Stock Ratios by Company Type Over Time",
+    x     = "Year",
+    y     = "Average Ratio"
+  ) +
+  theme(
+    axis.text.x    = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+```
+
+---
+
+## Summary and Findings
+
+Working through these visualizations revealed several notable patterns in the insurance asset data:
+
+1. **Right-skewed asset distributions** — Total asset distributions across all years were heavily right-skewed, indicating that a small number of insurance companies hold a disproportionately large share of total industry assets.
+
+2. **Company type differences** — When zooming in on the distribution (y-axis limit of 10⁸), it became clear that certain `COMPANY_TYPE_DESC` groups consistently hold larger total assets than others, suggesting structural differences across insurer categories.
+
+3. **Portfolio composition trends** — The bond and stock ratio plots reveal that different company types allocate their portfolios quite differently. Life insurers, for example, tend to hold higher bond ratios compared to property-casualty companies, which aligns with industry expectations around liability duration matching.
