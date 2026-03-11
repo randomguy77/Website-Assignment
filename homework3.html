@@ -4286,7 +4286,7 @@ src: url(data:font/ttf;base64,AAEAAAARAQAABAAQR0RFRg7VCWsAAAJMAAAAhkdQT1O405IxAA
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
+        var filterRegex = new RegExp("https:\/\/randomguy77\.github\.io\/Website-Assignment\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
